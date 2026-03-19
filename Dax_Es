@@ -1,0 +1,55 @@
+1.Calcola il fatturato totale delle vendite. Il risultato deve essere una misura riutilizzabile nel report
+Fatturato Totale = 
+SUMX(
+  'Vendite',
+  'Vendite'[Importo]
+)
+
+2. Calcola la percentuale di margine lordo, cioè (Fatturato - Costo totale) / Fatturato. Il costo totale è dato da Quantita × CostoAcquisto per ogni riga.
+Margine Lordo = 
+VAR CostoTotale =
+SUMX(
+  'Vendite',
+  'Vendite'[Quantita] * RELATED ('Prodotti'[CostoAcquisto])
+)
+VAR Output = 
+DIVIDE(
+  ([Fatturato Totale] - CostoTotale),
+  [Fatturato Totale]
+)
+RETURN
+Output
+
+3. Crea una misura che mostri il fatturato dello stesso periodo dell'anno scorso, per permettere confronti YoY nel report.
+Vendite Anno Precedente =
+CALCULATE (
+  [Fatturato Totale],
+  SAMEPERIODLASTYEAR('Calendario'[Data])
+)
+
+4. Partendo dalle misure già create, calcola la variazione percentuale rispetto all'anno precedente e mostra BLANK quando non c'è un anno precedente disponibile.
+   Variazione % Annua = 
+   DIVIDE(
+   ([Fatturato Totale]-[Vendite Anno Precedente]),
+   [Vendite Anno Precedente],
+   BLANK
+   )
+   
+5. Crea una misura che assegni il ranking del prodotto corrente all'interno della sua categoria (non globale), utile per filtrare i top N prodotti in una visual.
+   Rank prodotto per categoria = 
+   RANKX(
+     ALLSELECTED(
+     'Prodotti'[NomeProdotto]
+     ),
+     [Fatturato Totale]
+   )
+
+6. Calcola la percentuale di ogni categoria sul totale delle categorie visibili — il totale deve cambiare dinamicamente in base agli slicer attivi, non sul dataset completo.
+   % PER CATEGORIA VISUALIZZATA = 
+   DIVIDE(
+     [Fatturato Totale]
+     CALCULATE(
+       [Fatturato Totale],
+       ALLSELECTED(Prodotti[Categoria])
+     )
+   )
