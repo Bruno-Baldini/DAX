@@ -1,0 +1,124 @@
+DAX Commands:
+
+SUM & SUMX
+La semplice somma tra le colonne viene percepita dal DAX nella stessa maniera
+SUM (Tabella[Colonna1]) e SUMX(Tabella, Tabella[Colonna1]) sono identiche per il DAX, a livello back-end.
+SUMX() permette la somma aggragata di una funzione specificata nell'operatore
+SUMX(
+  Tabella,
+  Colonna1 * Colonna2
+  )
+
+ROUNDING FUNCTION: Time Value
+MROUND(Time_value,numebr) arrotonda Time_value al multiplo più vicino di number
+FLOOR(Time_value,numebr) arrotonda sempre al ribasso Time_value al multiplo più vicino di number
+CEILING(Time_value,numebr) arrotonda sempre al rialzo Time_value al multiplo più vicino di number
+
+SWITCH
+Permette di analizzare un espressione presa in input e in base al valore restituito (uno e uno soltanto) sceglie il risultato in base al valore a lui assegnato
+SWITCH(
+  Esperssione,
+  Valore1,Risultato1,
+  Valore2,Risultato2,
+  Valore3,Risultato3
+  "Else"
+)
+
+COALESCE
+Ritona il primo risultato che non ha valore BLANK. Se tutte le espressioni hanno valore BLANK, allora ritorna BLANK
+COALESCE(Espressione1, Esperssione2,..., "-") Se l'esperssione 1 o 2 tornano un valore allora printalo, ma se tornano BLANK printa "-" (valore no BLANK)
+COALESCE può essere visto come cuna concatenazione di IF + ISBLANK, ma molto più leggibile
+
+SUMX() & CALCULATE(SUMX())
+La differenza tra le due funzioni sopra sta nel filtraggio dei dati. 
+SUMX() somma tutti i valori che trova in una colonna o esperssione ed printa lo stesso risultato per tutte le righe
+CALCULATE(SUMX()) prima di effetuare la somma dei valori, cerca un filtro di contesto in base alle righe coinvolte nel calcolo. Il risultato su ogni riga cambia in base al filtro applicato o trovato da CALCULATE
+Questo caso si presenta solo nella Visulaizzazione a Tabella , mentre quando si va a creare un garfico o matrix, DAX impone un filtro in base al contesto che il grafico/matrix crea
+
+CALCULATE ()
+L'operatore CALCULATE permette di eseguire un esperssione/calcolo in base ad un o più filtri imposti.
+L'ordine con cui poniamo i filtri e nel quale vengono eseguiti è fondamentale.
+CALCULATE(
+  [Customer_Sales],
+  'Store Lookup'[store_id] = 3,
+  'Product Lookup'[product] = "Pane",
+  ALL (
+    'Store Lookup'
+  )
+)
+
+Nella query in esempio, DAX la esegue nel seguente ordine:
+1. Esegue ALL (ogni comando ALL presente in Calculate viene eseguito per primo)
+2. 'Store Lookup'[store_id] = 3 dopo avre tolto tutti i filtri su 'Store Lookup' con ALL, si pone la condizione sullo store_id
+3. 'Product Lookup'[product] = "Pane"
+4. [Customer_Sales] l'espressione/calcolo viene eseguito per ultimo dopo l'applicazioni di tutti i filtri e condizioni presensti nella CALCULATE
+
+REMOVEFILTERS()
+Rimuove tutti i filtri presenti sulla Tabella (come ALL) o colonna specificata. Può essere usata come un filtro in CALCULATE, e non come ALL come una funzione tabellare
+RMOVEFILTERS(Tabella_o_Colonna1,Colonna2) se si decide di rimuove i filtri su più colonne, le colonne devono appartenere alla stessa tabella
+
+KEEPFILTERS()
+Mantiene i filtri presenti su di una tabella o colonna in CALCULATE. L'argomento contenuto nel comando può essere una tabella, colonna o una espressione (ad esempio store_id = 3). 
+Non modifica i filtre già esistenti ma li aggiunge ad essi. Mostra SOLO il valore del dato con la condizione/filtro applicato, i resto printa "-"
+
+VALUES()
+Se viene specificato solo il nome della tabella, il risultato che si ottiene è una tabella con tutte le colonne e righe indipendentemente dai valoi univoci, più una riga Blank.
+Se si specifica la colonna della tabella, si ottine una colonna con valori univoci piuù una righa BLANK. Si usa in combinazione con COUNTROWS() per il conteggio dei valori distinti.
+La righa BLANK indica la presenza di valori non visibili nella visualizzazione grafica/matrix. Questi valori sono dovutti dalla relazione che esiste tra le tabelle lookup e fact. 
+Se nella tabella su cui andiamo ad utilizzare l'operatore VALUES (lookup), non contiene tuttevle informazioni presenti nella fact-table, allora coparirà la riga BALNK. Con l'utilizzo di DISTINCT i valori/dati in eccesso verranno persi
+
+SELECTEDVALUE(Colonna1, "-")
+Ritorna un valore quando esiste un solo valore in una specifica colonna (come ad esempio il costo delle produzioni o il prezzo di vendita), altrimenti ritorna il riusltato da noi assegnato.
+Quando si raggruppa per una determinata categoria (prodotto), se sono presenti valori unici in quella determinata colonna (costo produzione per singolo prodotto), allorà verrà restituito il valore.
+In nessun caso viene restituito il valore complessivo di quella categoria (categoria prodotto).
+
+ALLEXCEPT(Tabella, Colonna1,..)
+Rimuove tutti i filtri presenti sulla tabella specificata, tranne sulle colonne elencate.
+Quando si psecifica la tabella sulla quale eliminare tutti i filtri presenti su di essa, si devono usare i nomi delle tabelle esistenti e non di espressioni (es FILTER(...))
+La colonna specificata deve essere presente nella tebella specificata, o facente parte della tabella che si trova nella perte di uno nella relazione con la tabella specificata (es Tabella1 1 ----- * Tabella2, la colonna della Tabella1 può essere chimamata)
+
+ALLSELECTED(Tabella_o_Colonna1, Colonna2,..)
+Rimuove i filtri presenti nella visualizzazione grafica (es matrix sul gruppo di prodotti, la customer sales fatta con ALLSELECTED restituisce il valore totale per tutte le categorie), ma tiene conto dei filtri esterni, come filtro pagin o report, applicati al grafico
+(quando vine applicato sul matrix un filtro esterno sul rage di date, il risultato cambia in base all'input passato).
+
+ALLSELECTED('Tabella') — rimuove i filtri interni sull'intera tabella
+ALLSELECTED('Tabella'[Colonna]) — rimuove i filtri interni solo su quella colonna
+ALLSELECTED() senza argomenti — rimuove tutti i filtri interni dal contesto corrente
+
+SELECTCOLUMNS(Tabella,Nome_Nuova_tabella, Valori)
+Ritorna una tabella dalla tabella specificata con l'aggiunta delle colonne espresse. La tabella in ingresso può essere anche virtuale (FILTER())
+
+ADDCOLUMS (Tabella,Nome_Nuova_tabella, Valori)
+Dalla Tabella specificata, si aggiungono le colonne elencate con la relativa esperssione.
+
+SUMMARIZE(Tabella, Colonna)
+Questa funzione non è di aggregazione, ma ritorna le univoche combinazioni della tabella specificata in base ai valori della colonna.
+
+RELATED(ColonnaTabella)
+Ritorna un valore dalla tabella relazionata lato *----1
+
+REALATEDTABLE(Tabella)
+Ritorna la tabella specificata filtrata in base ai valori corrispondenti alla tabella in cui siamo (1---*)
+
+CONCATENATEX(Tabella, Espressione, Delimitatore, Order_by_Colonna, Ordine_asc_desc)
+Permette di concatenare valori presenti su due o più colonne nella tabella specificata. Per rappresentarlo graficamente deve essere messo insieme ad un valore identificativo (come id)
+
+AVERAGEX(Tabella, Espressione)
+Calcola la media della espressione in base ai valori resi dalla tabella specificata 
+Es Calcola la media delle vendite in base al periodo di riferimento dato da Calendar nel grafico 
+AVERAGEX(
+  'Calendar',
+  Customer Sales
+)
+
+RANKX(Tabella, Espressione, Valore, Ordine_asc_desc, Skip_Dense)
+Crea un ranking in base ai valori ottenuti dall'espressione sulla tabella passata. Chiarisci punto con ALLSELECTED()
+
+PARALLELPERIOD(Colonna_Data, Numero_Intervalli, Intervallo_Data)
+Ritorna una colonna con date che sono parallele ma shiftate di un numero di intervalli (1 in avanti, -1 in dietro) in base al valore dell'intervallo (DAY,MONTH,YEAR)
+In PREVIOUSQUARTER() il risultato dei vari Trimestri non viene aggregato ma viene visualizzato il valore del Trimestre precedente mentre PARALLELPERIOD() si printa anche il risultato aggregato
+
+SAMEPERIODLASTYEAR(Colonna_Data)
+Restituisce le date dell'anno precedente. Per analizzare nello specifico le date singole dell'anno precedentre usare questo operatore, in quanto con PARALLELPERIOD le somme delle singole date si aggregano.
+Se il periodo di riferimento temporale non è completo (le rilevazioni finiscono a fine marzo), non vengo printati i valori anche se presenti dell'anno passato nel periodo dove non abbiamo valori odierni (visto che dopo marzo no abbiamo più valori, nemmeno quelli dello scorso anno verrano printati)
+
