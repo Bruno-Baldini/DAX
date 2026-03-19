@@ -1,0 +1,47 @@
+% Totale Selezionato (ALLSELECTED)=
+DIVIDE(
+    SUM(Vendite[Importo]), -- calcolo dele venditre totali effettuate in base al contesto di riga (di uno specifico prodotto)
+    CALCULATE( - si crea il denominatore
+        SUM(
+            Vendite[Importo] -- calcolo delle vendite
+          ), 
+        ALLSELECTED(Vendite[prodotto])  -- non si considerano le vendite dei singoli prodotti, ma quelle delle categorie, in modo da ottenere la percentuale dei pordotti venduti a seconda della categoria di appartenenza
+    )
+)
+
+Ranking Selezionato =
+RANKX(
+    ALLSELECTED(Prodotti[NomeProdotto]), -- Rimuove tutti i filtri di visualizzazione di contesto sul nome del prodotto, quindi il ranking non lo fai sul prodotto stesso (altrimenti tornerebbe tutti 1), ma sul contesto più generale del matrix
+    CALCULATE(SUM(Vendite[Importo])),
+    ,
+    DESC,
+    Dense
+)
+
+Moving Average Time Period= 
+--Questa misura calcola una media mobile a 30 giorni delle vendite
+
+VAR LastTransactionDate = MAx('Calendar'[Transaction_Date]) -- Prende la data più recente nel contesto corrente (ad esempio, se stai guardando il mese di marzo, prende il 31 marzo).
+VAR AverageDays = 30 -- Definisce la finestra temporale della media mobile (Mensile)
+VAR Period =
+FILTER( -- Rappresenta la finestra temporale
+
+    ALL('Calendar'[Transaction_Date]), -- Si rimuove ogni filtro presente nella tabella Calendar sulla colonna Transaction_Date
+
+    AND( -- Per ogni data presente nella tabella Calendar, si seleziona un intervallo di 30 giorni tra (LastTransactionDate - 30) fino a LastTransactionDate
+
+        'Calendar'[Transaction_Date] > LastTransactionDate - AverageDays,
+        'Calendar'[Transaction_Date] <= LastTransactionDate
+    )
+)
+VAR Output = 
+CALCULATE(
+    AVERAGEX(
+        'Calendar',
+        [Customer Sales]
+    ),
+    Period
+) -- Ogni punto del grafico/tabella mostrerà la media delle vendite dei 30 giorni precedenti a quella data, utile per smussare le fluttuazioni e vedere il trend generale.
+
+RETURN
+Output
