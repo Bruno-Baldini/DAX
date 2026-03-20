@@ -47,9 +47,54 @@ CALCULATE (
 6. Calcola la percentuale di ogni categoria sul totale delle categorie visibili — il totale deve cambiare dinamicamente in base agli slicer attivi, non sul dataset completo.
    % PER CATEGORIA VISUALIZZATA = 
    DIVIDE(
-     [Fatturato Totale]
+     [Fatturato Totale],
      CALCULATE(
        [Fatturato Totale],
        ALLSELECTED(Prodotti[Categoria])
      )
    )
+7. Conta quanti clienti distinti hanno effettuato almeno un acquisto nel periodo selezionato. Un cliente che ha fatto 10 ordini conta come 1.
+COUNTROWS(
+  VALUES(
+    Vendite[ClienteID]
+  )
+)
+
+8. Calcola il fatturato cumulato dall'inizio dell'anno fino alla data corrente nel contesto. Mostra il risultato sia con TOTALYTD sia con CALCULATE + DATESYTD per capire la differenza.
+CALCULATE(
+  [Fatturato Totale],
+  DATESYTD(Calendario[Data])
+)
+
+9. Crea una misura che conti quanti venditori hanno superato il loro target annuo. Il confronto deve avvenire tra il fatturato effettivo di ciascun venditore e il suo campo TargetAnnuo.
+COUNTROWS(
+  FILTER(
+    Venditori,
+    CALCULATE([Fatturato Totale]) > Venditore[TargetAnnuo]
+  )
+)
+
+10. Calcola la media mobile degli ultimi 3 mesi del fatturato, per smussare le variazioni stagionali in un grafico a linee. La finestra deve scorrere dinamicamente al variare della data nel contesto.
+Media Mobile 3M = 
+VAR Last_date = MAX(Calendario[Data]) 
+VAR Scorrimento = 90
+VAR Periodo =
+FILTER(
+  Calendario,
+  AND(
+    Calendario[Data] > (Last_date - Scorrimento),
+    Calendario[Data] <= Last_date
+  )
+)
+
+VAR Avg = 
+CALCULATE(
+  AVERAGEX(
+    Calendario,
+    [Fatturato Totale]
+  ),
+  Periodo
+)
+
+RETURN
+Avg
