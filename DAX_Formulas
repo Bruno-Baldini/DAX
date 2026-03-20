@@ -45,3 +45,29 @@ CALCULATE(
 
 RETURN
 Output
+
+-- VERSIONE Mensile, Periodo di 3 Mesi
+Media Mobile 3M =
+VAR UltimaData = LASTDATE(Calendario[Data]) --L'ultima data corrente disponibile, come MAX()
+VAR Finestra =
+    DATESINPERIOD( -- Si definisce una finestra temporale
+        Calendario[Data],
+        UltimaData, -- Dall'ultima data disponibile, si torna indietro di 3 Mesi. Si Crea un periodo tra (UltimaData - 3) e UltimaData
+        -3,
+        MONTH                   
+    )
+RETURN
+    CALCULATE(
+        AVERAGEX(
+            VALUES(Calendario[Anno] & Calendario[Mese]),  -- Torna una tabella Calendario can valori unici su Anno e Mese
+            [Fatturato Totale]
+        ),
+        Finestra
+    )
+
+
+-- Misura del fatturato cumulato da inizio anno fino alla data corrente nel contesto 
+CALCULATE(
+[Fatturato Totale],
+DATESYTD(Calendario[Data]) 
+)
